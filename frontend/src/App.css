@@ -1,0 +1,82 @@
+.page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: #111826;
+  color: #e8eef6;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.title {
+  font-weight: 700;
+}
+
+.status {
+  opacity: 0.75;
+  font-size: 12px;
+}
+
+.wall {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #0b0f14;
+}
+
+.danmaku {
+  position: absolute;
+  white-space: nowrap;
+  right: -20%;
+  color: #e8eef6;
+  font-size: 18px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  animation-name: fly;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.danmaku .id {
+  opacity: 0.7;
+  margin-right: 6px;
+}
+
+@keyframes fly {
+  from { transform: translateX(0); }
+  to { transform: translateX(-140vw); }
+}
+
+.bar {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: #111826;
+}
+
+.bar input {
+  flex: 1;
+  font-size: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #0b0f14;
+  color: #e8eef6;
+  outline: none;
+}
+
+.bar button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  background: #3b82f6;
+  color: white;
+  cursor: pointer;
+}
