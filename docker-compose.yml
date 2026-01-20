@@ -1,0 +1,16 @@
+services:
+  api:
+    build: ./backend
+    environment:
+      - AWS_REGION=${AWS_REGION}
+      - DDB_TABLE=${DDB_TABLE}
+      - DDB_ENABLED=${DDB_ENABLED}
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    restart: unless-stopped
