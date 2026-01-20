@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from typing import Any, Dict, List, Optional
 from contextlib import asynccontextmanager
 
@@ -25,6 +26,8 @@ from utils import (
 TOKEN_TTL_SECONDS = 5 * 60
 MAX_IN_MEMORY = 500
 RECOVER_LIMIT = 1000  # 重启时从DDB恢复多少条（按ts排序取最后N条）
+MAX_POSTS_PER_TOKEN = 5
+RATE_LIMIT_PERIOD = 86400
 # =======================
 
 app = FastAPI()
@@ -40,6 +43,10 @@ _order: List[str] = []
 _subscribers: set[asyncio.Queue] = set()
 _sub_lock = asyncio.Lock()
 
+# token限制发言次数
+_token_counter: Dict[str, int] = {}  # token -> 发送次数
+_token_last_reset: Dict[str, float] = {}  # token -> 上次重置时间
+
 # 命中的服务的标识
 from utils import now_ms
 PID = os.getpid()
@@ -53,6 +60,57 @@ def require_auth(authorization: Optional[str]) -> None:
     exp = _tokens.get(token)
     if not exp or exp < now_ts():
         raise HTTPException(status_code=401, detail="Token expired")
+
+
+def check_and_update_token_limit(token: str) -> bool:
+    """
+    检查并更新token的发送次数
+    返回: True=允许发送, False=超过限制
+    """
+    now = now_ts()
+    
+    # 检查是否需要重置（超过24小时）
+    last_reset = _token_last_reset.get(token, 0)
+    if now - last_reset >= RATE_LIMIT_PERIOD:
+        _token_counter[token] = 0
+        _token_last_reset[token] = now
+        return True
+    
+    # 检查是否超过限制
+    count = _token_counter.get(token, 0)
+    if count >= MAX_POSTS_PER_TOKEN:
+        return False
+    
+    # 更新计数
+    _token_counter[token] = count + 1
+    return True
+
+
+def get_token_remaining(token: str) -> int:
+    """获取token剩余可发送次数"""
+    now = now_ts()
+    last_reset = _token_last_reset.get(token, 0)
+    
+    # 如果超过24小时，重置
+    if now - last_reset >= RATE_LIMIT_PERIOD:
+        return MAX_POSTS_PER_TOKEN
+    
+    count = _token_counter.get(token, 0)
+    return max(0, MAX_POSTS_PER_TOKEN - count)
+
+
+_ID8_RE = re.compile(r"[A-Za-z0-9]{8}")
+
+def parse_delete_ids(s: str) -> List[str]:
+    ids = _ID8_RE.findall(s)
+    # 去重但保留顺序
+    seen = set()
+    out = []
+    for mid in ids:
+        if mid not in seen:
+            out.append(mid)
+            seen.add(mid)
+    return out
 
 
 async def broadcast(event: str, data: dict) -> None:
@@ -77,17 +135,12 @@ def ddb_put_message(msg: dict) -> None:
     t.put_item(Item={"id": msg["id"], "content": msg["content"], "ts": msg["ts"], "deleted": False})
 
 
-def ddb_mark_delete(mid: str) -> None:
+def ddb_delete_item(mid: str) -> None:
     t = ddb_table()
     if t is None:
         return
-    # 这里选择“标记删除”，而不是 DeleteItem：
-    # 方便重启恢复时知道它被删过（也能避免误恢复）
-    t.update_item(
-        Key={"id": mid},
-        UpdateExpression="SET deleted = :d",
-        ExpressionAttributeValues={":d": True},
-    )
+    t.delete_item(Key={"id": mid})
+
 
 
 def ddb_recover() -> List[dict]:
@@ -166,14 +219,41 @@ def list_messages():
 async def post_message(payload: PostMessageIn, authorization: Optional[str] = Header(default=None)):
     require_auth(authorization)
 
+    token = parse_bearer(authorization)
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
     content = clean_text(payload.content)
     if not content:
         raise HTTPException(status_code=400, detail="Empty content")
 
-    # 兼容 "!delete id"
-    if content.startswith("!delete "):
-        target = content.split(" ", 1)[1].strip()
-        return await delete_message(target, authorization)
+    # 先处理 delete 命令：不计入发言次数
+    if content.startswith("!delete"):
+        ids = parse_delete_ids(content)
+        if not ids:
+            raise HTTPException(status_code=400, detail="No ids to delete")
+
+        results = []
+        for mid in ids:
+            resp = await delete_message(mid, authorization)
+            results.append({"id": mid, "deleted": bool(resp.get("deleted", False))})
+
+        return {"ok": True, "action": "delete", "ids": ids, "results": results}
+
+
+    # 普通发言：才做限流计数
+    if not check_and_update_token_limit(token):
+        remaining = get_token_remaining(token)
+        reset_in = RATE_LIMIT_PERIOD - int(now_ts() - _token_last_reset.get(token, 0))
+        raise HTTPException(
+            status_code=429,
+            detail=f"发送次数已达上限（{MAX_POSTS_PER_TOKEN}条/24小时）",
+            headers={
+                "X-RateLimit-Limit": str(MAX_POSTS_PER_TOKEN),
+                "X-RateLimit-Remaining": str(remaining),
+                "X-RateLimit-Reset": str(reset_in),
+            },
+        )
 
     mid = gen_id8(set(_messages.keys()))
     msg = {"id": mid, "content": content, "ts": now_ms()}
@@ -187,12 +267,14 @@ async def post_message(payload: PostMessageIn, authorization: Optional[str] = He
 
     try:
         ddb_put_message(msg)
-    except Exception:
-        # 不影响主流程
-        pass
+    except Exception as e:
+        print("DDB put failed:", msg["id"], repr(e))
 
     await broadcast("message", msg)
-    return {"ok": True, "item": msg}
+
+    remaining = get_token_remaining(token)
+    return {"ok": True, "item": msg, "remaining": remaining}
+
 
 
 @app.delete("/messages/{mid}")
@@ -208,9 +290,9 @@ async def delete_message(mid: str, authorization: Optional[str] = Header(default
             pass
 
     try:
-        ddb_mark_delete(mid)
-    except Exception:
-        pass
+        ddb_delete_item(mid)
+    except Exception as e:
+        print("DDB mark delete failed:", mid, repr(e))
 
     await broadcast("delete", {"id": mid})
     return {"ok": True, "deleted": existed}
