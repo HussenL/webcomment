@@ -265,7 +265,7 @@ export default function App() {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder='输入弹幕（删除：!delete id1,id2）'
+          placeholder='输入弹幕'
           onKeyDown={(e) => e.key === "Enter" && onSend()}
         />
         <button onClick={onSend}>发送</button>
