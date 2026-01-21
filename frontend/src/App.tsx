@@ -93,7 +93,7 @@ export default function App() {
     return { lane: best, startAt };
   }
 
-  function spawn(msgId: string) {
+  function spawn(msgId: string, forceImmediate = false) {
     const msg = poolRef.current.get(msgId);
     if (!msg) return;
 
@@ -113,10 +113,11 @@ export default function App() {
     const gapTimeSec = (textW + GAP_PX) / SPEED_PX_PER_SEC;
 
     const { lane, startAt } = pickLane(now);
-    const delay = Math.max(0, (startAt - now) / 1000);
+    const realStartAt = forceImmediate ? now : startAt;
+    const delay = forceImmediate ? 0 : Math.max(0, (startAt - now) / 1000);
 
     // 更新该 lane 的下次可发射时间
-    laneNextMsRef.current[lane] = startAt + gapTimeSec * 1000;
+    laneNextMsRef.current[lane] = realStartAt + gapTimeSec * 1000;
 
     const top = TOP_PADDING + lane * LANE_HEIGHT;
 
@@ -156,7 +157,7 @@ export default function App() {
         // 清空 active，并把初始化弹幕“发射一轮”
         setActive([]);
         laneNextMsRef.current = Array.from({ length: LANES }, () => Date.now());
-        for (const m of init) spawn(m.id);
+        for (const m of init) spawn(m.id, true);
 
         // SSE
         const es = createEventSource();
