@@ -41,6 +41,23 @@ async function deleteMessage(id: string): Promise<any> {
   return res.json();
 }
 
+function parseDeleteIds(input: string): string[] {
+  // 支持 "!delete a,b,c"（也容错中文逗号/多空格）
+  const rest = input.slice("!delete".length).trim().replaceAll("，", ",");
+  const parts = rest.split(",").map((s) => s.trim()).filter(Boolean);
+
+  // 去重但保序
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  for (const p of parts) {
+    if (!seen.has(p)) {
+      seen.add(p);
+      ids.push(p);
+    }
+  }
+  return ids;
+}
+
 export default function App() {
   const [items, setItems] = useState<Msg[]>([]);
   const [text, setText] = useState("");
@@ -78,8 +95,8 @@ export default function App() {
 
         es.addEventListener("hello", () => setStatus("SSE connected"));
       } catch (e) {
-          console.log("init error:", e);
-          setStatus(String(e));
+        console.log("init error:", e);
+        setStatus(String(e));
       }
     })();
 
@@ -94,20 +111,30 @@ export default function App() {
     const v = text.trim();
     if (!v) return;
 
-    // delete command
-    if (v.startsWith("!delete ")) {
-      const ids = v.slice("!delete".length).trim().split(",").map(s => s.trim()).filter(Boolean);
+    // ✅ delete command（批量）
+    if (v.startsWith("!delete")) {
+      const ids = parseDeleteIds(v);
+      if (ids.length === 0) {
+        alert("请输入要删除的 id，例如：!delete Ab12Cd34,Ef56Gh78");
+        return;
+      }
+
       for (const id of ids) {
         const r = await deleteMessage(id);
         if (!r?.ok) alert(`删除失败(${id})：${r?.detail ?? "unknown"}`);
+        // 本地立即删（不依赖 SSE）
         setItems((prev) => prev.filter((x) => x.id !== id));
       }
 
+      setText("");
+      return;
+    }
 
+    // ✅ normal message
     const r = await postMessage(v);
 
-    // 关键：POST 成功立即显示，不依赖 SSE
     if (r?.ok && r?.item) {
+      // POST 成功立即显示，不依赖 SSE
       setItems((prev) => [...prev, r.item]);
     } else {
       alert(`发送失败：${r?.detail ?? "unknown"}`);
@@ -147,7 +174,7 @@ export default function App() {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder='输入弹幕'
+          placeholder="输入弹幕"
           onKeyDown={(e) => e.key === "Enter" && onSend()}
         />
         <button onClick={onSend}>发送</button>
@@ -160,4 +187,4 @@ function hash(s: string) {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
   return h;
-}}
+}
