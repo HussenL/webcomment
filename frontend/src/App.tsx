@@ -11,8 +11,11 @@ async function initToken() {
   token = data.token;
 }
 
-function authHeaders() {
-  return token ? { Authorization: `Bearer ${token}` } : {};
+function authHeaders(contentType?: string): Headers {
+  const h = new Headers();
+  if (contentType) h.set("Content-Type", contentType);
+  if (token) h.set("Authorization", `Bearer ${token}`);
+  return h;
 }
 
 async function fetchMessages(): Promise<Msg[]> {
@@ -24,7 +27,7 @@ async function fetchMessages(): Promise<Msg[]> {
 async function postMessage(content: string): Promise<any> {
   const res = await fetch("/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: authHeaders("application/json"),
     body: JSON.stringify({ content }),
   });
   return res.json();
@@ -33,7 +36,7 @@ async function postMessage(content: string): Promise<any> {
 async function deleteMessage(id: string): Promise<any> {
   const res = await fetch(`/messages/${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: { ...authHeaders() },
+    headers: authHeaders(),
   });
   return res.json();
 }
@@ -93,16 +96,13 @@ export default function App() {
 
     // delete command
     if (v.startsWith("!delete ")) {
-      const id = v.split(" ", 2)[1]?.trim();
-      if (id) {
+      const ids = v.slice("!delete".length).trim().split(",").map(s => s.trim()).filter(Boolean);
+      for (const id of ids) {
         const r = await deleteMessage(id);
-        if (!r?.ok) alert(`删除失败：${r?.detail ?? "unknown"}`);
-        // 本地也立即删（不依赖 SSE）
+        if (!r?.ok) alert(`删除失败(${id})：${r?.detail ?? "unknown"}`);
         setItems((prev) => prev.filter((x) => x.id !== id));
       }
-      setText("");
-      return;
-    }
+
 
     const r = await postMessage(v);
 

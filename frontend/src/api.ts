@@ -6,8 +6,11 @@ export async function initToken() {
   token = data.token;
 }
 
-function authHeaders() {
-  return token ? { Authorization: `Bearer ${token}` } : {};
+function buildHeaders(contentType?: string): Headers {
+  const h = new Headers();
+  if (contentType) h.set("Content-Type", contentType);
+  if (token) h.set("Authorization", `Bearer ${token}`);
+  return h;
 }
 
 export async function fetchMessages() {
@@ -18,7 +21,7 @@ export async function fetchMessages() {
 export async function postMessage(content: string) {
   const res = await fetch("/messages", {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
+    headers: buildHeaders("application/json"),
     body: JSON.stringify({ content }),
   });
   return res.json();
@@ -27,7 +30,7 @@ export async function postMessage(content: string) {
 export async function deleteMessage(id: string) {
   const res = await fetch(`/messages/${encodeURIComponent(id)}`, {
     method: "DELETE",
-    headers: { ...authHeaders() },
+    headers: buildHeaders(),
   });
   return res.json();
 }
