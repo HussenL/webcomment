@@ -36,6 +36,7 @@
   white-space: nowrap;
   font-weight: 600;
   font-size: 18px;
+  color: rgba(255, 255, 255, 0.85); /* 灰白 */
 
   /* 关键：线性匀速 + 延迟 */
   animation-name: fly;
