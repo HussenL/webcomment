@@ -31,26 +31,53 @@
   background: rgba(0,0,0,0.15);
 }
 
-/* 弹幕：从右往左飞 */
+/* ===== 弹幕本体 ===== */
 .danmaku {
   position: absolute;
   right: -10px;
+
+  /* 关键：内容用 flex 排版 */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
   white-space: nowrap;
   font-weight: 600;
   font-size: 18px;
-  color: rgba(160, 160, 60, 0.85) !important; /* 灰白 */
+  line-height: 1;
 
-  /* 关键：线性匀速 + 延迟 */
+  color: rgba(160, 160, 60, 0.85);
+
+  /* 只负责“飞”，不再自己 transform */
   animation-name: fly;
   animation-timing-function: linear;
   animation-fill-mode: both;
 }
 
-@keyframes fly {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(-140vw); }
+/* 图标 */
+.danmaku img.icon {
+  width: 20px;
+  height: auto;
+  flex-shrink: 0;
+  opacity: 0.9;
 }
 
+/* id */
+.danmaku span:first-of-type {
+  opacity: 0.75;
+}
+
+/* ===== 飞行动画 ===== */
+@keyframes fly {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-140vw);
+  }
+}
+
+/* ===== 输入栏 ===== */
 .bar {
   display: flex;
   gap: 8px;
