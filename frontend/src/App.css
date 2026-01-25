@@ -43,7 +43,7 @@
 
   white-space: nowrap;
   font-weight: 600;
-  font-size: 18px;
+  font-size: clamp(14px, 3.6vw, 18px);
   line-height: 1;
 
   color: rgba(160, 160, 60, 0.85);
@@ -56,7 +56,7 @@
 
 /* 图标 */
 .danmaku img.icon {
-  width: 20px;
+  width: clamp(14px, 3.2vw, 20px);
   height: auto;
   flex-shrink: 0;
   opacity: 0.9;
