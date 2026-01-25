@@ -45,12 +45,12 @@ export default function LoadingOverlay({
     const t1 = window.setTimeout(() => {
       if (fillTimer) window.clearInterval(fillTimer);
       setPhase("fall");
-    }, 2500);
+    }, 2000);
 
     /* ========= 完成 ========= */
     const t2 = window.setTimeout(() => {
       onFinish();
-    }, 3300);
+    }, 2800);
 
     return () => {
       if (fillTimer) window.clearInterval(fillTimer);

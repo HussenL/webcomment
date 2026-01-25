@@ -198,7 +198,7 @@ export default function App() {
       const tokenP = initToken().catch((e) => {
         // token 失败会影响 post/delete，但不应该阻止页面显示
         console.log("initToken error:", e);
-        if (alive) setStatus("token init failed (read-only)");
+        if (alive) setStatus("过期啦！请重新扫码！");
       });
 
       const messagesP = fetchMessages()
