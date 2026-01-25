@@ -296,7 +296,7 @@ export default function App() {
 
       <div className="page">
         <div className="topbar">
-          <div className="title">Danmaku</div>
+          <div className="title">超市火辣辣留言</div>
           <div className="status">{status}</div>
         </div>
 
@@ -304,7 +304,7 @@ export default function App() {
           {active.map((a) => (
             <div
               key={a.instanceId}
-              className="danmaku"
+              className="超市火辣辣留言"
               style={{
                 top: a.top,
                 animationDuration: `${a.duration}s`,
