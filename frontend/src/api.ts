@@ -7,9 +7,13 @@ let token: string | null = null;
 
 export async function initToken() {
   const res = await fetch(`${BASE}/token`);
+  if (!res.ok) {
+    throw new Error(`initToken failed: ${res.status}`);
+  }
   const data = await res.json();
   token = data.token;
 }
+
 
 function authHeaders(contentType?: string): Headers {
   const h = new Headers();
@@ -20,6 +24,9 @@ function authHeaders(contentType?: string): Headers {
 
 export async function fetchMessages(): Promise<Msg[]> {
   const res = await fetch(`${BASE}/messages`);
+  if (!res.ok) {
+    throw new Error(`fetchMessages failed: ${res.status}`);
+  }
   const data = await res.json();
   return data.items ?? [];
 }
@@ -30,6 +37,9 @@ export async function postMessage(content: string): Promise<any> {
     headers: authHeaders("application/json"),
     body: JSON.stringify({ content }),
   });
+  if (!res.ok) {
+    throw new Error(`postMessage failed: ${res.status}`);
+  }
   return res.json();
 }
 
@@ -38,6 +48,9 @@ export async function deleteMessage(id: string): Promise<any> {
     method: "DELETE",
     headers: authHeaders(),
   });
+  if (!res.ok) {
+    throw new Error(`deleteMessage failed: ${res.status}`);
+  }
   return res.json();
 }
 
