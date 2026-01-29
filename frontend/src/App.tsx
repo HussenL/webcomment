@@ -296,7 +296,7 @@ export default function App() {
 
       <div className="page">
         <div className="topbar">
-          <div className="title">danmaku</div>
+          <div className="title">火辣辣弹幕~~~</div>
           <div className="status">{status}</div>
         </div>
 

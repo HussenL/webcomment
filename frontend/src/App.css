@@ -1,9 +1,35 @@
+/* ===== 奶油糖主题变量 ===== */
+:root {
+  /* 基础背景 */
+  --bg-main: #fff6e8;            /* 奶油白 */
+  --bg-panel: rgba(255, 255, 255, 0.65);
+  --bg-input: rgba(255, 255, 255, 0.8);
+
+  /* 文字 */
+  --text-main: #3a2a20;          /* 奶咖色 */
+  --text-muted: rgba(58, 42, 32, 0.65);
+
+  /* 边框 */
+  --border-main: rgba(58, 42, 32, 0.18);
+
+  /* 弹幕（奶油糖主角） */
+  --danmaku-main: rgba(255, 170, 92, 0.92); /* 奶油橙糖 */
+
+  /* 渐变 / 强调 */
+  --grad-wall-1: rgba(255, 214, 170, 0.25); /* 奶油杏 */
+  --grad-wall-2: rgba(255, 184, 108, 0.25); /* 焦糖橙 */
+
+  --btn-grad-1: rgba(255, 184, 108, 0.95);
+  --btn-grad-2: rgba(255, 214, 170, 0.95);
+}
+
+/* ===== 页面结构 ===== */
 .page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #111;
-  color: #eee;
+  background: var(--bg-main);
+  color: var(--text-main);
 }
 
 .topbar {
@@ -11,7 +37,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid var(--border-main);
+  background: var(--bg-panel);
 }
 
 .title {
@@ -22,13 +49,19 @@
 .status {
   font-size: 12px;
   opacity: 0.8;
+  color: var(--text-muted);
 }
 
+/* ===== 弹幕墙 ===== */
 .wall {
   position: relative;
   flex: 1;
   overflow: hidden;
-  background: rgba(0,0,0,0.15);
+  background: linear-gradient(
+    135deg,
+    var(--grad-wall-1),
+    var(--grad-wall-2)
+  );
 }
 
 /* ===== 弹幕：从右往左飞（稳定版）===== */
@@ -46,7 +79,7 @@
   font-size: clamp(14px, 3.6vw, 18px);
   line-height: 1;
 
-  color: rgba(160, 160, 60, 0.85) !important;
+  color: var(--danmaku-main) !important;
 
   animation-name: fly;
   animation-timing-function: linear;
@@ -63,15 +96,14 @@
   width: clamp(14px, 3.2vw, 20px);
   height: auto;
   flex-shrink: 0;
-  opacity: 0.9;
-  /* 防止被全局 img 样式撑爆 */
+  opacity: 0.95;
   max-width: none;
 }
-
 
 /* id */
 .danmaku span:first-of-type {
   opacity: 0.75;
+  color: var(--text-muted);
 }
 
 /* ===== 输入栏 ===== */
@@ -79,14 +111,25 @@
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid var(--border-main);
+  background: var(--bg-panel);
 }
 
 .bar input {
   flex: 1;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(0,0,0,0.15);
+  border: 1px solid var(--border-main);
+  background: var(--bg-input);
   color: inherit;
+}
+
+.bar button {
+  background: linear-gradient(
+    135deg,
+    var(--btn-grad-1),
+    var(--btn-grad-2)
+  );
+  color: #fff;
+  border: 1px solid var(--border-main);
 }
