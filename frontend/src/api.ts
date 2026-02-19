@@ -1,12 +1,16 @@
 export type Msg = { id: string; content: string; ts: number };
 
 // Vite: base="/wc/" -> import.meta.env.BASE_URL === "/wc/"
+// 仍然保留 BASE 给静态资源用（你如果别处用到）
 const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+
+// ✅ API 走根路径（由 CloudFront/ALB 统一转发）
+const API_BASE = "";
 
 let token: string | null = null;
 
 export async function initToken() {
-  const res = await fetch(`${BASE}/token`);
+  const res = await fetch(`${API_BASE}/token`);
   if (!res.ok) {
     throw new Error(`initToken failed: ${res.status}`);
   }
@@ -23,7 +27,7 @@ function authHeaders(contentType?: string): Headers {
 }
 
 export async function fetchMessages(): Promise<Msg[]> {
-  const res = await fetch(`${BASE}/messages`);
+  const res = await fetch(`${API_BASE}/messages`);
   if (!res.ok) {
     throw new Error(`fetchMessages failed: ${res.status}`);
   }
@@ -32,7 +36,7 @@ export async function fetchMessages(): Promise<Msg[]> {
 }
 
 export async function postMessage(content: string): Promise<any> {
-  const res = await fetch(`${BASE}/messages`, {
+  const res = await fetch(`${API_BASE}/messages`, {
     method: "POST",
     headers: authHeaders("application/json"),
     body: JSON.stringify({ content }),
@@ -44,7 +48,7 @@ export async function postMessage(content: string): Promise<any> {
 }
 
 export async function deleteMessage(id: string): Promise<any> {
-  const res = await fetch(`${BASE}/messages/${encodeURIComponent(id)}`, {
+  const res = await fetch(`${API_BASE}/messages/${encodeURIComponent(id)}`, {
     method: "DELETE",
     headers: authHeaders(),
   });
@@ -55,5 +59,5 @@ export async function deleteMessage(id: string): Promise<any> {
 }
 
 export function createEventSource() {
-  return new EventSource(`${BASE}/events`);
+  return new EventSource(`${API_BASE}/events`);
 }
