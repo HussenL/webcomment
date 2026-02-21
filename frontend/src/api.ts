@@ -2,7 +2,7 @@ export type Msg = { id: string; content: string; ts: number };
 
 // Vite: base="/wc/" -> import.meta.env.BASE_URL === "/wc/"
 // 仍然保留 BASE 给静态资源用（你如果别处用到）
-const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+// const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 
 // ✅ API 走根路径（由 CloudFront/ALB 统一转发）
 const API_BASE = "";
