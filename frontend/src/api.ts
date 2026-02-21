@@ -1,7 +1,7 @@
 export type Msg = { id: string; content: string; ts: number };
 
-// ✅ API 走根路径（由 nginx/CloudFront/ALB 转发）
-const API_BASE = "";
+// ✅ 统一走 /wc 前缀（命中 CloudFront 的 /wc* 行为）
+const API_BASE = "/wc";
 
 let token: string | null = null;
 
@@ -51,7 +51,7 @@ export function createEventSource() {
 }
 
 // ===== Admin（console）=====
-const ADMIN_KEY = "webcomment_admin_token";
+const ADMIN_KEY = "wc_admin_token";
 
 export function getAdminToken(): string {
   return localStorage.getItem(ADMIN_KEY) ?? "";
@@ -70,6 +70,7 @@ function adminHeaders(contentType?: string): Headers {
   return h;
 }
 
+// ✅ 注意：管理 API 也走 /wc/admin/*
 export async function adminFetchAllMessages(): Promise<Msg[]> {
   const res = await fetch(`${API_BASE}/admin/messages`, {
     headers: adminHeaders(),
