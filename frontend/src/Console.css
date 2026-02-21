@@ -1,0 +1,106 @@
+.console-page {
+  min-height: 100vh;
+  padding: 12px;
+}
+
+.console-topbar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--border-main);
+  background: var(--bg-panel);
+  border-radius: 12px;
+}
+
+.console-title {
+  font-weight: 800;
+}
+
+.console-status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.console-tools {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.console-token {
+  flex: 1;
+  min-width: 260px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-main);
+  background: var(--bg-input);
+  color: inherit;
+}
+
+.console-back {
+  margin-left: auto;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.8;
+}
+
+.console-table-wrap {
+  margin-top: 10px;
+  border: 1px solid var(--border-main);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.55);
+}
+
+.console-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.console-table th,
+.console-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-main);
+  vertical-align: top;
+}
+
+.console-table th {
+  text-align: left;
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+.console-textarea {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-main);
+  background: var(--bg-input);
+  color: inherit;
+}
+
+.console-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.console-actions .danger {
+  background: rgba(255, 80, 80, 0.18);
+  border: 1px solid rgba(255, 80, 80, 0.35);
+}
+
+.console-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}

@@ -5,6 +5,7 @@ services:
       - AWS_REGION=${AWS_REGION}
       - DDB_TABLE=${DDB_TABLE}
       - DDB_ENABLED=${DDB_ENABLED}
+      - ADMIN_TOKEN=admin123
     restart: unless-stopped
 
   web:

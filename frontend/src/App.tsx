@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import LoadingOverlay from "./LoadingOverlay";
+import ConsolePage from "./Console";
 
 import {
   type Msg,
@@ -54,27 +55,27 @@ function makeMeasurer() {
 }
 
 export default function App() {
+  // ✅ 简单路由：/wc/console 进入控制台（不启用弹幕逻辑）
+  const path = window.location.pathname.replace(/\/+$/, "");
+  if (path.endsWith("/wc/console") || path.endsWith("/console")) {
+    return <ConsolePage />;
+  }
+
   const [status, setStatus] = useState("init...");
   const [text, setText] = useState("");
 
-  // overlay：你现在是固定 3.3s 出场；我们保留这个行为
   const [loading, setLoading] = useState(true);
 
-  // pool：当前“存在的弹幕”（未删除）
   const poolRef = useRef<Map<string, Msg>>(new Map());
-
-  // active：当前在屏幕上飞的“实例”（循环会不断生成新的实例）
   const [active, setActive] = useState<Active[]>([]);
 
   const wallRef = useRef<HTMLDivElement | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
-  // 每条 lane 下一次允许发射的时间点（ms）
   const laneNextMsRef = useRef<number[]>(
     Array.from({ length: LANES }, () => Date.now())
   );
 
-  // 测量函数（只创建一次）
   const measure = useMemo(() => makeMeasurer(), []);
 
   function getWallWidth() {
@@ -86,7 +87,6 @@ export default function App() {
     return "600 18px system-ui, -apple-system, Segoe UI, Roboto, Arial";
   }
 
-  // 选择最早可发射的 lane（最不容易重叠）
   function pickLane(now: number) {
     const next = laneNextMsRef.current;
     let best = 0;
@@ -105,7 +105,6 @@ export default function App() {
     const wallW = getWallWidth();
 
     const font = getDanmakuFont();
-    // 用完整字符串测宽（更贴近真实宽度）
     const measureText = `[${msg.id}] ${msg.content}`;
     const textW = measure(measureText, font);
 
@@ -120,23 +119,13 @@ export default function App() {
     laneNextMsRef.current[lane] = realStartAt + gapTimeSec * 1000;
 
     const top = TOP_PADDING + lane * LANE_HEIGHT;
-    const instanceId = `${msgId}-${startAt}-${Math.random()
-      .toString(16)
-      .slice(2)}`;
+    const instanceId = `${msgId}-${startAt}-${Math.random().toString(16).slice(2)}`;
 
     const icon = Math.floor(Math.random() * 20) + 1;
 
     setActive((prev) => [
       ...prev,
-      {
-        instanceId,
-        msgId,
-        icon,
-        text: msg.content,
-        top,
-        duration,
-        delay,
-      },
+      { instanceId, msgId, icon, text: msg.content, top, duration, delay },
     ]);
   }
 
@@ -150,7 +139,6 @@ export default function App() {
   }
 
   function connectSSE() {
-    // 防止重复连接
     esRef.current?.close();
     esRef.current = null;
 
@@ -167,9 +155,7 @@ export default function App() {
         try {
           const m: Msg = JSON.parse(e.data);
           upsertToPoolAndSpawn(m);
-        } catch {
-          // ignore bad payload
-        }
+        } catch {}
       });
 
       es.addEventListener("delete", (e: MessageEvent) => {
@@ -177,26 +163,19 @@ export default function App() {
           const { id } = JSON.parse(e.data);
           poolRef.current.delete(id);
           removeAllInstancesOf(id);
-        } catch {
-          // ignore bad payload
-        }
+        } catch {}
       });
     } catch (e) {
       setStatus(`SSE init failed: ${String(e)}`);
     }
   }
 
-  // 初始化：并行 + 容错 + SSE 延迟
   useEffect(() => {
     let alive = true;
-
-    // 让 UI 更“快”：先把状态改掉（即使后端慢）
     setStatus("booting...");
 
     (async () => {
-      // ① token & ② messages 并行（互不阻塞）
       const tokenP = initToken().catch((e) => {
-        // token 失败会影响 post/delete，但不应该阻止页面显示
         console.log("initToken error:", e);
         if (alive) setStatus("过期啦！请重新扫码！");
       });
@@ -209,13 +188,9 @@ export default function App() {
           for (const m of init) poolRef.current.set(m.id, m);
 
           setActive([]);
-          laneNextMsRef.current = Array.from(
-            { length: LANES },
-            () => Date.now()
-          );
+          laneNextMsRef.current = Array.from({ length: LANES }, () => Date.now());
 
           for (const m of init) spawn(m.id, true);
-
           if (alive) setStatus("messages loaded");
         })
         .catch((e) => {
@@ -223,13 +198,11 @@ export default function App() {
           if (alive) setStatus(`fail to fetch messages`);
         });
 
-      // 等 messages 至少尝试一次（不等 token）
       await messagesP;
       await tokenP;
 
       if (!alive) return;
 
-      // ③ SSE 延迟连接：避开冷启动最脆弱的窗口
       setTimeout(() => {
         if (!alive) return;
         connectSSE();
@@ -248,7 +221,6 @@ export default function App() {
     const v = text.trim();
     if (!v) return;
 
-    // 批量删除
     if (v.startsWith("!delete")) {
       const ids = parseDeleteIds(v);
       if (ids.length === 0) {
@@ -264,7 +236,6 @@ export default function App() {
           alert(`删除请求失败(${id})：${String(e)}`);
         }
 
-        // 本地立即删（不依赖 SSE）
         poolRef.current.delete(id);
         removeAllInstancesOf(id);
       }
@@ -311,13 +282,8 @@ export default function App() {
                 animationDelay: `${a.delay}s`,
               }}
               onAnimationEnd={() => {
-                setActive((prev) =>
-                  prev.filter((x) => x.instanceId !== a.instanceId)
-                );
-
-                if (poolRef.current.has(a.msgId)) {
-                  spawn(a.msgId);
-                }
+                setActive((prev) => prev.filter((x) => x.instanceId !== a.instanceId));
+                if (poolRef.current.has(a.msgId)) spawn(a.msgId);
               }}
               title={a.msgId}
             >
